@@ -64,19 +64,25 @@ app = FastAPI(
 # Models
 # ---------------------------------------------------------------------------
 
+
 class RerankRequest(BaseModel):
     """Request body for /v1/rerank."""
 
     model: str | None = None
-    query: str = Field(..., min_length=1, description="The query to match against documents")
+    query: str = Field(
+        ..., min_length=1, description="The query to match against documents"
+    )
     documents: list[Any] = Field(..., min_length=1, description="Documents to rerank")
-    top_n: int | None = Field(default=None, ge=1, description="Return only top N results")
+    top_n: int | None = Field(
+        default=None, ge=1, description="Return only top N results"
+    )
     return_documents: bool = True
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def check_auth(authorization: str | None) -> None:
     """Validate Bearer token if API_KEY is configured."""
@@ -126,6 +132,7 @@ def normalize_scores(raw_scores: Any) -> list[float]:
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
+
 
 @app.get("/health")
 def health() -> dict[str, str]:
@@ -212,6 +219,7 @@ def rerank(
 # ---------------------------------------------------------------------------
 # Error handlers
 # ---------------------------------------------------------------------------
+
 
 @app.exception_handler(Exception)
 async def internal_error_handler(request: Request, exc: Exception) -> JSONResponse:

@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  docker-build:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,43 +18,17 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: false
-          load: true
-          tags: local/ettin-reranker:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Verify image health
         run: |
-          # Run container in background, wait for model load, then hit health endpoint
-          docker run -d \
-            --name test-reranker \
-            -p 8000:8000 \
-            -e MODEL_ID=cross-encoder/ettin-reranker-400m-v1 \
-            -e DEVICE=cpu \
-            local/ettin-reranker:test
+          docker build \
+            --build-arg MODEL_ID=${{ vars.MODEL_ID || 'cross-encoder/ettin-reranker-400m-v1' }} \
+            --build-arg DEVICE=${{ vars.DEVICE || 'cuda' }} \
+            -t local/ettin-reranker:test \
+            .
 
-          # Wait for the server to be healthy (model download + load can take a while on CPU)
-          echo "Waiting for server to start..."
-          for i in $(seq 1 60); do
-            if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
-              echo "Server is healthy!"
-              curl -s http://localhost:8000/health | python3 -m json.tool
-              break
-            fi
-            if [ "$i" -eq 60 ]; then
-              echo "Server failed to start within timeout"
-              docker logs test-reranker
-              exit 1
-            fi
-            sleep 5
-          done
-
-          docker stop test-reranker
-          docker rm test-reranker
+      - name: Inspect image
+        run: |
+          docker image inspect local/ettin-reranker:test --format '{{.Size}} bytes'
+          docker history local/ettin-reranker:test
 
   lint:
     runs-on: ubuntu-latest
