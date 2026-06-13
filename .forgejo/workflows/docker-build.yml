@@ -1,0 +1,78 @@
+name: Docker Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: local/ettin-reranker:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify image health
+        run: |
+          # Run container in background, wait for model load, then hit health endpoint
+          docker run -d \
+            --name test-reranker \
+            -p 8000:8000 \
+            -e MODEL_ID=cross-encoder/ettin-reranker-400m-v1 \
+            -e DEVICE=cpu \
+            local/ettin-reranker:test
+
+          # Wait for the server to be healthy (model download + load can take a while on CPU)
+          echo "Waiting for server to start..."
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              echo "Server is healthy!"
+              curl -s http://localhost:8000/health | python3 -m json.tool
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "Server failed to start within timeout"
+              docker logs test-reranker
+              exit 1
+            fi
+            sleep 5
+          done
+
+          docker stop test-reranker
+          docker rm test-reranker
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Lint with ruff
+        run: ruff check server.py
+
+      - name: Check formatting with ruff
+        run: ruff format --check server.py
