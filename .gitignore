@@ -1,8 +1,12 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# C extensions
 *.so
+
+# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -17,11 +21,11 @@ sdist/
 var/
 wheels/
 *.egg-info/
-.installed.cfg
 *.egg
 
 # Virtual environments
-.venv/
+.env
+.venv
 venv/
 ENV/
 
@@ -30,14 +34,21 @@ ENV/
 .vscode/
 *.swp
 *.swo
+*~
 
-# Environment
-.env
-.env.local
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
 
-# HuggingFace cache (should be mounted as volume)
+# HuggingFace cache
 .cache/
 .huggingface/
 
-# Docker
-docker-compose.override.yml
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+.env.local
+*.log
