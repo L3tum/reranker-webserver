@@ -1,0 +1,24 @@
+services:
+  reranker:
+    build: .
+    container_name: ettin-reranker
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_ID=cross-encoder/ettin-reranker-400m-v1
+      - DEVICE=cuda
+      - BATCH_SIZE=16
+      - API_KEY=${RERANKER_API_KEY:-}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
