@@ -1,27 +1,31 @@
-FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
+FROM nvidia/cuda:13.3.0-runtime-ubi9
 
 LABEL org.opencontainers.image.source="https://forgejo.mortimer.website/l3tum/reranker-webserver"
 LABEL org.opencontainers.image.description="OpenAI-compatible reranker server for Ettin cross-encoder models"
 
-ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
 
-# Runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
+# Install Python 3.11 from AppStream + runtime dependencies
+# UBI9 base includes Python 3.9, AppStream provides 3.11
+RUN dnf install -y --setopt=install_weak_deps=False \
+    python3.11 \
+    python3.11-pip \
     ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
+  && dnf clean all
 
-RUN python3 -m pip install --break-system-packages --upgrade pip
+# Create virtual environment to avoid system package conflicts
+RUN python3.11 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# PyTorch with CUDA 12.8 support
-RUN python3 -m pip install --break-system-packages \
-    torch --index-url https://download.pytorch.org/whl/cu128
+# Upgrade pip inside venv (no system conflicts)
+RUN pip install --upgrade pip
+
+# PyTorch with CUDA 13.2 support (forward-compatible with CUDA 13.3 runtime)
+RUN pip install torch --index-url https://download.pytorch.org/whl/cu132
 
 # Application dependencies - sentence-transformers pulls compatible transformers
-RUN python3 -m pip install --break-system-packages \
+RUN pip install \
     "sentence-transformers>=5.4.1" \
     fastapi \
     "uvicorn[standard]" \
