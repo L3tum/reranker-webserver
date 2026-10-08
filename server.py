@@ -7,6 +7,7 @@ Compatible with Open-WebUI's external reranker integration.
 
 import logging
 import os
+import secrets
 import time
 from typing import Any
 
@@ -90,7 +91,7 @@ def check_auth(authorization: str | None) -> None:
         return
 
     expected = f"Bearer {API_KEY}"
-    if authorization != expected:
+    if authorization is None or not secrets.compare_digest(authorization, expected):
         raise HTTPException(status_code=401, detail="Invalid API key")
 
 
@@ -223,7 +224,10 @@ def rerank(
 
 @app.exception_handler(Exception)
 async def internal_error_handler(request: Request, exc: Exception) -> JSONResponse:
-    logger.error("Unhandled error: %s", exc, exc_info=True)
+    # LOG014 is a false positive here: this IS an exception handler (FastAPI's
+    # @app.exception_handler decorator); ruff only recognizes handlers defined
+    # inside `except` blocks.
+    logger.error("Unhandled error: %s", exc, exc_info=True)  # noqa: LOG014
     return JSONResponse(
         status_code=500,
         content={"error": "Internal server error"},

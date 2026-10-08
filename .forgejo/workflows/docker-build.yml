@@ -46,7 +46,8 @@ jobs:
           python-version: "3.12"
 
       - name: Install ruff
-        run: pip install ruff
+        # Pinned: ruff 0.16 changed its default rule set; bump the version deliberately.
+        run: pip install "ruff==0.16.9"
 
       - name: Lint with ruff
         run: ruff check server.py

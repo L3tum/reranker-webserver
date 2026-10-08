@@ -115,11 +115,14 @@ See the [Open-WebUI docs](https://docs.openwebui.com/reference/env-configuration
 
 ## Pre-downloading the Model (Offline Mode)
 
-To use the server offline, pre-download the model into the HuggingFace cache:
+To use the server offline, pre-download the model into the HuggingFace cache.
+Both steps use `HF_HOME=/app/.cache` so the cache lands in the mounted volume
+(the default `HF_HOME` is `~/.cache/huggingface`):
 
 ```bash
 docker run --rm \
   -v /path/to/cache:/app/.cache \
+  -e HF_HOME=/app/.cache \
   python:3.12-slim \
   sh -lc '
     pip install -U huggingface_hub[hf_transfer] &&
@@ -128,7 +131,20 @@ docker run --rm \
   '
 ```
 
-Then mount the cache and set `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1` on the server.
+Then mount the same cache into the server and force offline mode:
+
+```bash
+docker run --rm \
+  --gpus all \
+  -p 8000:8000 \
+  -v /path/to/cache:/app/.cache \
+  -e HF_HOME=/app/.cache \
+  -e HF_HUB_OFFLINE=1 \
+  -e TRANSFORMERS_OFFLINE=1 \
+  -e MODEL_ID=cross-encoder/ettin-reranker-400m-v1 \
+  -e DEVICE=cuda \
+  local/ettin-reranker:latest
+```
 
 ## Testing
 
