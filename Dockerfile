@@ -1,4 +1,4 @@
-FROM nvidia/cuda:13.3.0-runtime-ubi9
+FROM nvidia/cuda:13.3.0-runtime-ubi9@sha256:c4714db36d49c2169a8ce53a423b30a43cbf9f51d59ba15c4203ada1a42029d8
 
 LABEL org.opencontainers.image.source="https://forgejo.mortimer.website/l3tum/reranker-webserver"
 LABEL org.opencontainers.image.description="OpenAI-compatible reranker server for Ettin cross-encoder models"
